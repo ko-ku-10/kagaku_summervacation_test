@@ -1,298 +1,286 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>化学式・イオン式 超速暗記</title>
-<style>
-    body {
-        font-family: 'Helvetica Neue', Arial, sans-serif;
-        background-color: #f4f7f6;
-        color: #333;
-        margin: 0;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-    #app {
-        width: 100%;
-        max-width: 400px;
-        text-align: center;
-    }
-    .status {
-        font-size: 14px;
-        color: #666;
-        margin-bottom: 20px;
-        font-weight: bold;
-    }
-    .card {
-        background: #fff;
-        border-radius: 12px;
-        padding: 40px 20px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        margin-bottom: 20px;
-        min-height: 120px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
-    .question {
-        font-size: 24px;
-        font-weight: bold;
-        margin-bottom: 10px;
-    }
-    .answer {
-        font-size: 32px;
-        color: #e74c3c;
-        font-weight: bold;
-        display: none; /* 初期状態は非表示 */
-        margin-top: 20px;
-    }
-    button {
-        width: 100%;
-        padding: 15px;
-        font-size: 18px;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: bold;
-        margin-bottom: 10px;
-        transition: background 0.2s;
-    }
-    .btn-show { background: #3498db; color: #fff; }
-    .btn-show:active { background: #2980b9; }
-    
-    .judge-buttons {
-        display: none; /* 答えを見るまでは非表示 */
-        justify-content: space-between;
-        gap: 10px;
-    }
-    .btn-correct { background: #2ecc71; color: #fff; width: 48%; }
-    .btn-wrong { background: #e74c3c; color: #fff; width: 48%; }
-    
-    .completed {
-        font-size: 24px;
-        color: #2ecc71;
-        font-weight: bold;
-        display: none;
-    }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>化学式 超速暗記</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: #f3f4f6;
+            touch-action: manipulation; /* ダブルタップズーム防止 */
+        }
+        .formula-text sub, .formula-text sup {
+            font-size: 0.6em;
+            margin-left: 1px;
+        }
+        .card-container {
+            perspective: 1000px;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
-<body>
+<body class="text-gray-800 antialiased h-screen flex flex-col">
 
-<div id="app">
-    <div class="status">残り: <span id="count">0</span> 問</div>
-    
-    <div class="card" id="flashcard">
-        <div class="question" id="question-text">ロード中...</div>
-        <div class="answer" id="answer-text"></div>
-    </div>
+    <header class="bg-indigo-600 text-white p-4 shadow-md flex justify-between items-center sticky top-0 z-10">
+        <h1 class="text-lg font-bold">化学式マスター</h1>
+        <button onclick="resetApp()" class="text-xs bg-indigo-800 hover:bg-indigo-900 px-3 py-2 rounded shadow transition">
+            最初からやり直す
+        </button>
+    </header>
 
-    <button class="btn-show" id="btn-show" onclick="showAnswer()">答えを見る</button>
-    
-    <div class="judge-buttons" id="judge-buttons">
-        <button class="btn-wrong" onclick="judge(false)">❌ わからなかった</button>
-        <button class="btn-correct" onclick="judge(true)">⭕ 完璧！</button>
-    </div>
+    <main class="flex-grow flex flex-col items-center p-4 max-w-lg mx-auto w-full">
+        
+        <div class="w-full mb-6 flex justify-between items-end">
+            <div class="text-sm font-bold text-gray-500">
+                🔄 エンドレス反復モード
+            </div>
+            <div class="text-xs font-bold text-indigo-500">
+                忘れた頃に再出題されます
+            </div>
+        </div>
 
-    <div class="completed" id="completed-message">
-        🎉 全問クリア！<br><br>
-        <button class="btn-show" onclick="location.reload()">もう1周する</button>
-    </div>
-</div>
+        <div id="flashcard" class="w-full bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center justify-center min-h-[250px] mb-8 card-container relative">
+            <h2 id="question-text" class="text-3xl font-bold text-center text-gray-800 mb-6 w-full leading-tight">
+                <!-- Question will appear here -->
+            </h2>
+            
+            <div id="answer-text" class="text-5xl font-bold text-red-500 formula-text hidden fade-in text-center w-full">
+                <!-- Answer will appear here -->
+            </div>
+        </div>
 
-<script>
-// 【ここにプリントの化学式を追加・編集してください】
-// HTMLタグ（<sub>下付き</sub>、<sup>上付き</sup>）を使って表記します。
-// ここから
-const allCards = [
-    // 【陽イオン（1価）】
-    { q: "水素イオン", a: "H<sup>+</sup>" },
-    { q: "リチウムイオン", a: "Li<sup>+</sup>" },
-    { q: "ナトリウムイオン", a: "Na<sup>+</sup>" },
-    { q: "カリウムイオン", a: "K<sup>+</sup>" },
-    { q: "銀イオン", a: "Ag<sup>+</sup>" },
-    { q: "銅(I)イオン", a: "Cu<sup>+</sup>" },
-    { q: "アンモニウムイオン", a: "NH<sub>4</sub><sup>+</sup>" },
-    { q: "オキソニウムイオン", a: "H<sub>3</sub>O<sup>+</sup>" },
-    
-    // 【陽イオン（2価）】
-    { q: "マグネシウムイオン", a: "Mg<sup>2+</sup>" },
-    { q: "カルシウムイオン", a: "Ca<sup>2+</sup>" },
-    { q: "ストロンチウムイオン", a: "Sr<sup>2+</sup>" },
-    { q: "バリウムイオン", a: "Ba<sup>2+</sup>" },
-    { q: "亜鉛イオン", a: "Zn<sup>2+</sup>" },
-    { q: "銅(II)イオン", a: "Cu<sup>2+</sup>" },
-    { q: "鉄(II)イオン", a: "Fe<sup>2+</sup>" },
-    { q: "鉛(II)イオン", a: "Pb<sup>2+</sup>" },
-    { q: "マンガン(II)イオン", a: "Mn<sup>2+</sup>" },
-    
-    // 【陽イオン（3価）】
-    { q: "アルミニウムイオン", a: "Al<sup>3+</sup>" },
-    { q: "鉄(III)イオン", a: "Fe<sup>3+</sup>" },
-    { q: "クロム(III)イオン", a: "Cr<sup>3+</sup>" },
+        <div class="w-full flex-grow flex flex-col justify-end pb-4">
+            <button id="btn-show" onclick="showAnswer()" class="w-full bg-blue-500 active:bg-blue-600 text-white font-bold py-5 px-4 rounded-xl shadow-lg text-xl transition transform active:scale-95">
+                答えを見る
+            </button>
 
-    // 【陰イオン（1価）】
-    { q: "フッ化物イオン", a: "F<sup>-</sup>" },
-    { q: "塩化物イオン", a: "Cl<sup>-</sup>" },
-    { q: "臭化物イオン", a: "Br<sup>-</sup>" },
-    { q: "ヨウ化物イオン", a: "I<sup>-</sup>" },
-    { q: "水酸化物イオン", a: "OH<sup>-</sup>" },
-    { q: "硝酸イオン", a: "NO<sub>3</sub><sup>-</sup>" },
-    { q: "亜硝酸イオン", a: "NO<sub>2</sub><sup>-</sup>" },
-    { q: "酢酸イオン", a: "CH<sub>3</sub>COO<sup>-</sup>" },
-    { q: "炭酸水素イオン", a: "HCO<sub>3</sub><sup>-</sup>" },
-    { q: "硫酸水素イオン", a: "HSO<sub>4</sub><sup>-</sup>" },
-    { q: "シアン化物イオン", a: "CN<sup>-</sup>" },
-    { q: "過マンガン酸イオン", a: "MnO<sub>4</sub><sup>-</sup>" },
+            <div id="judge-buttons" class="hidden w-full flex justify-between gap-4">
+                <button onclick="handleJudge(false)" class="w-1/2 bg-red-500 active:bg-red-600 text-white font-bold py-5 px-2 rounded-xl shadow-lg text-lg transition transform active:scale-95 flex flex-col items-center justify-center leading-tight">
+                    <span class="text-2xl mb-1">❌</span>
+                    <span>わからなかった</span>
+                    <span class="text-xs font-normal opacity-80 mt-1">（すぐに再出題）</span>
+                </button>
+                <button onclick="handleJudge(true)" class="w-1/2 bg-green-500 active:bg-green-600 text-white font-bold py-5 px-2 rounded-xl shadow-lg text-lg transition transform active:scale-95 flex flex-col items-center justify-center leading-tight">
+                    <span class="text-2xl mb-1">⭕</span>
+                    <span>完璧！</span>
+                    <span class="text-xs font-normal opacity-80 mt-1">（間隔を空けて再出題）</span>
+                </button>
+            </div>
+        </div>
 
-    // 【陰イオン（2価・3価）】
-    { q: "酸化物イオン", a: "O<sup>2-</sup>" },
-    { q: "硫化物イオン", a: "S<sup>2-</sup>" },
-    { q: "硫酸イオン", a: "SO<sub>4</sub><sup>2-</sup>" },
-    { q: "亜硫酸イオン", a: "SO<sub>3</sub><sup>2-</sup>" },
-    { q: "炭酸イオン", a: "CO<sub>3</sub><sup>2-</sup>" },
-    { q: "クロム酸イオン", a: "CrO<sub>4</sub><sup>2-</sup>" },
-    { q: "二クロム酸イオン", a: "Cr<sub>2</sub>O<sub>7</sub><sup>2-</sup>" },
-    { q: "シュウ酸イオン", a: "C<sub>2</sub>O<sub>4</sub><sup>2-</sup>" },
-    { q: "チオ硫酸イオン", a: "S<sub>2</sub>O<sub>3</sub><sup>2-</sup>" },
-    { q: "リン酸イオン", a: "PO<sub>4</sub><sup>3-</sup>" },
+    </main>
 
-    // 【単体・気体分子など】
-    { q: "水素", a: "H<sub>2</sub>" },
-    { q: "酸素", a: "O<sub>2</sub>" },
-    { q: "オゾン", a: "O<sub>3</sub>" },
-    { q: "窒素", a: "N<sub>2</sub>" },
-    { q: "塩素", a: "Cl<sub>2</sub>" },
-    { q: "フッ素", a: "F<sub>2</sub>" },
-    { q: "ヨウ素", a: "I<sub>2</sub>" },
-    { q: "ヘリウム", a: "He" },
-    { q: "ネオン", a: "Ne" },
-    { q: "アルゴン", a: "Ar" },
-    { q: "炭素", a: "C" },
-    { q: "硫黄", a: "S" },
-    { q: "鉄", a: "Fe" },
-    { q: "銅", a: "Cu" },
-    { q: "銀", a: "Ag" },
+    <script>
+        // 生データ（約100問）
+        const rawData = [
+            // 陽イオン（1価）
+            { q: "水素イオン", a: "H<sup>+</sup>" }, { q: "リチウムイオン", a: "Li<sup>+</sup>" },
+            { q: "ナトリウムイオン", a: "Na<sup>+</sup>" }, { q: "カリウムイオン", a: "K<sup>+</sup>" },
+            { q: "銀イオン", a: "Ag<sup>+</sup>" }, { q: "銅(I)イオン", a: "Cu<sup>+</sup>" },
+            { q: "アンモニウムイオン", a: "NH<sub>4</sub><sup>+</sup>" }, { q: "オキソニウムイオン", a: "H<sub>3</sub>O<sup>+</sup>" },
+            // 陽イオン（2価）
+            { q: "マグネシウムイオン", a: "Mg<sup>2+</sup>" }, { q: "カルシウムイオン", a: "Ca<sup>2+</sup>" },
+            { q: "ストロンチウムイオン", a: "Sr<sup>2+</sup>" }, { q: "バリウムイオン", a: "Ba<sup>2+</sup>" },
+            { q: "亜鉛イオン", a: "Zn<sup>2+</sup>" }, { q: "銅(II)イオン", a: "Cu<sup>2+</sup>" },
+            { q: "鉄(II)イオン", a: "Fe<sup>2+</sup>" }, { q: "鉛(II)イオン", a: "Pb<sup>2+</sup>" },
+            { q: "マンガン(II)イオン", a: "Mn<sup>2+</sup>" },
+            // 陽イオン（3価）
+            { q: "アルミニウムイオン", a: "Al<sup>3+</sup>" }, { q: "鉄(III)イオン", a: "Fe<sup>3+</sup>" },
+            { q: "クロム(III)イオン", a: "Cr<sup>3+</sup>" },
+            // 陰イオン（1価）
+            { q: "フッ化物イオン", a: "F<sup>-</sup>" }, { q: "塩化物イオン", a: "Cl<sup>-</sup>" },
+            { q: "臭化物イオン", a: "Br<sup>-</sup>" }, { q: "ヨウ化物イオン", a: "I<sup>-</sup>" },
+            { q: "水酸化物イオン", a: "OH<sup>-</sup>" }, { q: "硝酸イオン", a: "NO<sub>3</sub><sup>-</sup>" },
+            { q: "亜硝酸イオン", a: "NO<sub>2</sub><sup>-</sup>" }, { q: "酢酸イオン", a: "CH<sub>3</sub>COO<sup>-</sup>" },
+            { q: "炭酸水素イオン", a: "HCO<sub>3</sub><sup>-</sup>" }, { q: "硫酸水素イオン", a: "HSO<sub>4</sub><sup>-</sup>" },
+            { q: "シアン化物イオン", a: "CN<sup>-</sup>" }, { q: "過マンガン酸イオン", a: "MnO<sub>4</sub><sup>-</sup>" },
+            // 陰イオン（2価・3価）
+            { q: "酸化物イオン", a: "O<sup>2-</sup>" }, { q: "硫化物イオン", a: "S<sup>2-</sup>" },
+            { q: "硫酸イオン", a: "SO<sub>4</sub><sup>2-</sup>" }, { q: "亜硫酸イオン", a: "SO<sub>3</sub><sup>2-</sup>" },
+            { q: "炭酸イオン", a: "CO<sub>3</sub><sup>2-</sup>" }, { q: "クロム酸イオン", a: "CrO<sub>4</sub><sup>2-</sup>" },
+            { q: "二クロム酸イオン", a: "Cr<sub>2</sub>O<sub>7</sub><sup>2-</sup>" }, { q: "シュウ酸イオン", a: "C<sub>2</sub>O<sub>4</sub><sup>2-</sup>" },
+            { q: "チオ硫酸イオン", a: "S<sub>2</sub>O<sub>3</sub><sup>2-</sup>" }, { q: "リン酸イオン", a: "PO<sub>4</sub><sup>3-</sup>" },
+            // 単体・気体分子など
+            { q: "水素", a: "H<sub>2</sub>" }, { q: "酸素", a: "O<sub>2</sub>" }, { q: "オゾン", a: "O<sub>3</sub>" },
+            { q: "窒素", a: "N<sub>2</sub>" }, { q: "塩素", a: "Cl<sub>2</sub>" }, { q: "フッ素", a: "F<sub>2</sub>" },
+            { q: "ヨウ素", a: "I<sub>2</sub>" }, { q: "ヘリウム", a: "He" }, { q: "ネオン", a: "Ne" },
+            { q: "アルゴン", a: "Ar" }, { q: "炭素", a: "C" }, { q: "硫黄", a: "S" },
+            { q: "鉄", a: "Fe" }, { q: "銅", a: "Cu" }, { q: "銀", a: "Ag" },
+            // 分子化合物
+            { q: "水", a: "H<sub>2</sub>O" }, { q: "過酸化水素", a: "H<sub>2</sub>O<sub>2</sub>" },
+            { q: "二酸化炭素", a: "CO<sub>2</sub>" }, { q: "一酸化炭素", a: "CO" },
+            { q: "アンモニア", a: "NH<sub>3</sub>" }, { q: "二酸化硫黄", a: "SO<sub>2</sub>" },
+            { q: "硫化水素", a: "H<sub>2</sub>S" }, { q: "塩化水素", a: "HCl" },
+            { q: "フッ化水素", a: "HF" }, { q: "二酸化窒素", a: "NO<sub>2</sub>" },
+            { q: "一酸化窒素", a: "NO" }, { q: "メタン", a: "CH<sub>4</sub>" },
+            { q: "エタン", a: "C<sub>2</sub>H<sub>6</sub>" }, { q: "エチレン", a: "C<sub>2</sub>H<sub>4</sub>" },
+            { q: "アセチレン", a: "C<sub>2</sub>H<sub>2</sub>" }, { q: "エタノール", a: "C<sub>2</sub>H<sub>5</sub>OH" },
+            // 酸・塩基
+            { q: "塩酸（塩化水素）", a: "HCl" }, { q: "硫酸", a: "H<sub>2</sub>SO<sub>4</sub>" },
+            { q: "硝酸", a: "HNO<sub>3</sub>" }, { q: "酢酸", a: "CH<sub>3</sub>COOH" },
+            { q: "リン酸", a: "H<sub>3</sub>PO<sub>4</sub>" }, { q: "シュウ酸", a: "H<sub>2</sub>C<sub>2</sub>O<sub>4</sub>" },
+            { q: "水酸化ナトリウム", a: "NaOH" }, { q: "水酸化カリウム", a: "KOH" },
+            { q: "水酸化バリウム", a: "Ba(OH)<sub>2</sub>" }, { q: "水酸化カルシウム", a: "Ca(OH)<sub>2</sub>" },
+            { q: "水酸化銅(II)", a: "Cu(OH)<sub>2</sub>" }, { q: "水酸化鉄(III)", a: "Fe(OH)<sub>3</sub>" },
+            { q: "水酸化アルミニウム", a: "Al(OH)<sub>3</sub>" },
+            // 塩（えん）等
+            { q: "塩化ナトリウム", a: "NaCl" }, { q: "塩化カリウム", a: "KCl" },
+            { q: "塩化カルシウム", a: "CaCl<sub>2</sub>" }, { q: "塩化アンモニウム", a: "NH<sub>4</sub>Cl" },
+            { q: "塩化バリウム", a: "BaCl<sub>2</sub>" }, { q: "塩化銀", a: "AgCl" },
+            { q: "塩化銅(II)", a: "CuCl<sub>2</sub>" }, { q: "炭酸ナトリウム", a: "Na<sub>2</sub>CO<sub>3</sub>" },
+            { q: "炭酸水素ナトリウム", a: "NaHCO<sub>3</sub>" }, { q: "炭酸カルシウム", a: "CaCO<sub>3</sub>" },
+            { q: "硫酸ナトリウム", a: "Na<sub>2</sub>SO<sub>4</sub>" }, { q: "硫酸カルシウム", a: "CaSO<sub>4</sub>" },
+            { q: "硫酸バリウム", a: "BaSO<sub>4</sub>" }, { q: "硫酸銅(II)", a: "CuSO<sub>4</sub>" },
+            { q: "硝酸カリウム", a: "KNO<sub>3</sub>" }, { q: "硝酸銀", a: "AgNO<sub>3</sub>" },
+            { q: "酢酸ナトリウム", a: "CH<sub>3</sub>COONa" }, { q: "硫化鉄(II)", a: "FeS" },
+            { q: "硫化銅(II)", a: "CuS" }, { q: "硫化亜鉛", a: "ZnS" },
+            { q: "酸化銅(II)", a: "CuO" }, { q: "酸化銀", a: "Ag<sub>2</sub>O" },
+            { q: "酸化マグネシウム", a: "MgO" }, { q: "酸化アルミニウム", a: "Al<sub>2</sub>O<sub>3</sub>" }
+        ];
 
-    // 【主な非金属の化合物（分子）】
-    { q: "水", a: "H<sub>2</sub>O" },
-    { q: "過酸化水素", a: "H<sub>2</sub>O<sub>2</sub>" },
-    { q: "二酸化炭素", a: "CO<sub>2</sub>" },
-    { q: "一酸化炭素", a: "CO" },
-    { q: "アンモニア", a: "NH<sub>3</sub>" },
-    { q: "二酸化硫黄", a: "SO<sub>2</sub>" },
-    { q: "硫化水素", a: "H<sub>2</sub>S" },
-    { q: "塩化水素", a: "HCl" },
-    { q: "フッ化水素", a: "HF" },
-    { q: "二酸化窒素", a: "NO<sub>2</sub>" },
-    { q: "一酸化窒素", a: "NO" },
-    { q: "メタン", a: "CH<sub>4</sub>" },
-    { q: "エタン", a: "C<sub>2</sub>H<sub>6</sub>" },
-    { q: "エチレン", a: "C<sub>2</sub>H<sub>4</sub>" },
-    { q: "アセチレン", a: "C<sub>2</sub>H<sub>2</sub>" },
-    { q: "エタノール", a: "C<sub>2</sub>H<sub>5</sub>OH" },
+        // 正解するたびに次回の出題までのターン数（間隔）が伸びる設定
+        const INTERVALS = [5, 15, 40, 100, 250, 600]; 
+        
+        let appState = {
+            turnCounter: 0,
+            cards: []
+        };
+        let currentCard = null;
+        let lastCardId = null;
 
-    // 【主な酸・塩基】
-    { q: "塩酸（塩化水素）", a: "HCl" },
-    { q: "硫酸", a: "H<sub>2</sub>SO<sub>4</sub>" },
-    { q: "硝酸", a: "HNO<sub>3</sub>" },
-    { q: "酢酸", a: "CH<sub>3</sub>COOH" },
-    { q: "リン酸", a: "H<sub>3</sub>PO<sub>4</sub>" },
-    { q: "シュウ酸", a: "H<sub>2</sub>C<sub>2</sub>O<sub>4</sub>" },
-    { q: "水酸化ナトリウム", a: "NaOH" },
-    { q: "水酸化カリウム", a: "KOH" },
-    { q: "水酸化バリウム", a: "Ba(OH)<sub>2</sub>" },
-    { q: "水酸化カルシウム", a: "Ca(OH)<sub>2</sub>" },
-    { q: "水酸化銅(II)", a: "Cu(OH)<sub>2</sub>" },
-    { q: "水酸化鉄(III)", a: "Fe(OH)<sub>3</sub>" },
-    { q: "水酸化アルミニウム", a: "Al(OH)<sub>3</sub>" },
+        function initApp() {
+            // LocalStorageから状態を復元（途中でブラウザを閉じてもOK）
+            const savedData = localStorage.getItem('chemFlashcardsSRS');
+            if (savedData) {
+                appState = JSON.parse(savedData);
+                
+                // データ構造のアップデート対応（新システムへの移行）
+                if (!appState.cards[0].hasOwnProperty('nextTurn') || appState.cards.length !== rawData.length) {
+                    buildNewDeck();
+                }
+            } else {
+                buildNewDeck();
+            }
 
-    // 【主な塩（えん）等の化合物】
-    { q: "塩化ナトリウム", a: "NaCl" },
-    { q: "塩化カリウム", a: "KCl" },
-    { q: "塩化カルシウム", a: "CaCl<sub>2</sub>" },
-    { q: "塩化アンモニウム", a: "NH<sub>4</sub>Cl" },
-    { q: "塩化バリウム", a: "BaCl<sub>2</sub>" },
-    { q: "塩化銀", a: "AgCl" },
-    { q: "塩化銅(II)", a: "CuCl<sub>2</sub>" },
-    { q: "炭酸ナトリウム", a: "Na<sub>2</sub>CO<sub>3</sub>" },
-    { q: "炭酸水素ナトリウム", a: "NaHCO<sub>3</sub>" },
-    { q: "炭酸カルシウム", a: "CaCO<sub>3</sub>" },
-    { q: "硫酸ナトリウム", a: "Na<sub>2</sub>SO<sub>4</sub>" },
-    { q: "硫酸カルシウム", a: "CaSO<sub>4</sub>" },
-    { q: "硫酸バリウム", a: "BaSO<sub>4</sub>" },
-    { q: "硫酸銅(II)", a: "CuSO<sub>4</sub>" },
-    { q: "硝酸カリウム", a: "KNO<sub>3</sub>" },
-    { q: "硝酸銀", a: "AgNO<sub>3</sub>" },
-    { q: "酢酸ナトリウム", a: "CH<sub>3</sub>COONa" },
-    { q: "硫化鉄(II)", a: "FeS" },
-    { q: "硫化銅(II)", a: "CuS" },
-    { q: "硫化亜鉛", a: "ZnS" },
-    { q: "酸化銅(II)", a: "CuO" },
-    { q: "酸化銀", a: "Ag<sub>2</sub>O" },
-    { q: "酸化マグネシウム", a: "MgO" },
-    { q: "酸化アルミニウム", a: "Al<sub>2</sub>O<sub>3</sub>" }
-];
-// ここまで
+            nextCard();
+        }
 
-let deck = [...allCards]; // 現在のデッキ（シャッフルして使う）
-let currentCardIndex = 0;
+        function buildNewDeck() {
+            appState.turnCounter = 0;
+            appState.cards = rawData.map((item, index) => ({
+                id: index,
+                q: item.q,
+                a: item.a,
+                level: 0, // 連続正解回数
+                nextTurn: 0 // 次に出題されるターン（0=すぐ出題）
+            }));
+            // 初回はランダムな順序で出題されるようにシャッフル
+            appState.cards.sort(() => Math.random() - 0.5);
+            saveState();
+        }
 
-// 配列をシャッフルする関数
-function shuffle(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-}
+        function saveState() {
+            localStorage.setItem('chemFlashcardsSRS', JSON.stringify(appState));
+        }
 
-function init() {
-    deck = shuffle(deck);
-    showNextCard();
-}
+        function resetApp() {
+            if (confirm('学習履歴を完全にリセットして最初からやり直しますか？')) {
+                localStorage.removeItem('chemFlashcardsSRS');
+                document.getElementById('flashcard').classList.remove('hidden');
+                document.getElementById('btn-show').classList.remove('hidden');
+                lastCardId = null;
+                initApp();
+            }
+        }
 
-function showNextCard() {
-    if (deck.length === 0) {
-        document.getElementById('flashcard').style.display = 'none';
-        document.getElementById('btn-show').style.display = 'none';
-        document.getElementById('judge-buttons').style.display = 'none';
-        document.getElementById('completed-message').style.display = 'block';
-        document.getElementById('count').innerText = "0";
-        return;
-    }
-    
-    document.getElementById('count').innerText = deck.length;
-    document.getElementById('question-text').innerHTML = deck[0].q;
-    document.getElementById('answer-text').innerHTML = deck[0].a;
-    
-    // 表示状態のリセット
-    document.getElementById('answer-text').style.display = 'none';
-    document.getElementById('btn-show').style.display = 'block';
-    document.getElementById('judge-buttons').style.display = 'none';
-}
+        function nextCard() {
+            // 出題タイミング（nextTurn）が現在のターン以下のカードを抽出
+            let dueCards = appState.cards.filter(c => c.nextTurn <= appState.turnCounter);
 
-function showAnswer() {
-    document.getElementById('answer-text').style.display = 'block';
-    document.getElementById('btn-show').style.display = 'none';
-    document.getElementById('judge-buttons').style.display = 'flex';
-}
+            // 全問正解して「出題待ち」状態になった場合、時間を未来へ早送りする
+            if (dueCards.length === 0) {
+                const nextTime = Math.min(...appState.cards.map(c => c.nextTurn));
+                appState.turnCounter = nextTime;
+                dueCards = appState.cards.filter(c => c.nextTurn <= appState.turnCounter);
+            }
 
-function judge(isCorrect) {
-    const card = deck.shift(); // 先頭のカードを取り出す
-    
-    if (!isCorrect) {
-        // 間違えた場合はデッキの最後に追加して再度出題する
-        deck.push(card);
-    }
-    
-    showNextCard();
-}
+            // 連続して全く同じ問題が出るのを防ぐ（他に候補がある場合）
+            if (dueCards.length > 1) {
+                dueCards = dueCards.filter(c => c.id !== lastCardId);
+            }
 
-// 起動
-init();
-</script>
+            // 候補の中から、もっとも「出題予定ターン」が古いもの（優先度が高いもの）順に並べる
+            dueCards.sort((a, b) => a.nextTurn - b.nextTurn);
+            
+            // 常に一番古いものを出すと順番が固定化されるため、上位3つの中からランダムに選んで出題
+            const poolSize = Math.min(3, dueCards.length);
+            const randomIndex = Math.floor(Math.random() * poolSize);
+            currentCard = dueCards[randomIndex];
+
+            renderCard();
+        }
+
+        function renderCard() {
+            // UIリセット
+            document.getElementById('question-text').innerHTML = currentCard.q;
+            document.getElementById('answer-text').innerHTML = currentCard.a;
+            
+            document.getElementById('answer-text').classList.add('hidden');
+            document.getElementById('answer-text').classList.remove('fade-in'); 
+            
+            document.getElementById('btn-show').classList.remove('hidden');
+            document.getElementById('judge-buttons').classList.add('hidden');
+        }
+
+        function showAnswer() {
+            const answerEl = document.getElementById('answer-text');
+            answerEl.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                answerEl.classList.add('fade-in');
+            });
+
+            document.getElementById('btn-show').classList.add('hidden');
+            document.getElementById('judge-buttons').classList.remove('hidden');
+            document.getElementById('judge-buttons').classList.add('flex');
+        }
+
+        function handleJudge(isCorrect) {
+            lastCardId = currentCard.id;
+            appState.turnCounter++; // 経過ターンを1進める
+
+            const cardIndex = appState.cards.findIndex(c => c.id === currentCard.id);
+            if (cardIndex !== -1) {
+                let card = appState.cards[cardIndex];
+                
+                if (isCorrect) {
+                    // ⭕ 正解：レベルアップし、間隔を空けて再出題
+                    const interval = INTERVALS[Math.min(card.level, INTERVALS.length - 1)];
+                    // 同じタイミングで出題が集中しないよう、ランダムに0〜2ターンずらす
+                    const jitter = Math.floor(Math.random() * 3);
+                    
+                    card.nextTurn = appState.turnCounter + interval + jitter;
+                    card.level++;
+                } else {
+                    // ❌ 不正解：レベルをリセットし、1〜2ターン後に即座に再出題
+                    card.level = 0;
+                    card.nextTurn = appState.turnCounter + Math.floor(Math.random() * 2) + 1;
+                }
+            }
+
+            saveState();
+            nextCard();
+        }
+
+        // 起動
+        window.onload = initApp;
+    </script>
 </body>
 </html>
